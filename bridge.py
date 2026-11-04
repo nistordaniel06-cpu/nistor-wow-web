@@ -26,9 +26,9 @@ class Handler(BaseHTTPRequestHandler):
             raw = json.dumps(data).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-        elif path in ("/", "/index.html"):
+        elif path in ("/", "/index.html", "/v5-auth-probe.html"):
             try:
-                raw = (ROOT / "index.html").read_bytes()
+                raw = (ROOT / ("v5-auth-probe.html" if path == "/v5-auth-probe.html" else "index.html")).read_bytes()
             except FileNotFoundError:
                 self.send_error(404, "index.html missing; download it next to bridge.py")
                 return
