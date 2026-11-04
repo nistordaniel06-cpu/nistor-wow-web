@@ -10,7 +10,7 @@
 const out=document.getElementById('output');
 function challenge(name){
  const u=new TextEncoder().encode(name.toUpperCase());
- const body=new Uint8Array(30+u.length);
+ const body=new Uint8Array(31+u.length);
  let p=0;
  for(const v of [87,111,87,0,3,3,5,0,0x34,0x30,54,56,120,0,110,105,87,0,83,85,110,101,0,0,0,0,127,0,0,1,u.length])body[p++]=v;
  body.set(u,p);
