@@ -10,14 +10,26 @@
 const out=document.getElementById('output');
 function challenge(name){
  const u=new TextEncoder().encode(name.toUpperCase());
- const body=new Uint8Array(31+u.length);
+ // WoW 3.3.5a logon challenge: 30-byte body header + account bytes.
+ const body=new Uint8Array(30+u.length);
  let p=0;
- for(const v of [87,111,87,0,3,3,5,0,0x34,0x30,54,56,120,0,110,105,87,0,83,85,110,101,0,0,0,0,127,0,0,1,u.length])body[p++]=v;
+ const push=(...bytes)=>{for(const v of bytes)body[p++]=v;};
+ push(87,111,87,0);          // "WoW\\0"
+ push(3,3,5);               // 3.3.5
+ push(0x34,0x30);           // build 12340 little-endian
+ push(54,56,120,0);        // "68x\\0" (x86 reversed)
+ push(110,105,87,0);       // "niW\\0" (Win reversed)
+ push(83,85,110,101);      // "SUne" (enUS reversed)
+ push(0,0,0,0);            // timezone bias
+ push(127,0,0,1);          // IPv4 localhost
+ push(u.length);
  body.set(u,p);
  const packet=new Uint8Array(body.length+4);
- packet[0]=0;packet[1]=0;packet[2]=body.length&255;packet[3]=body.length>>8;packet.set(body,4);
+ packet[0]=0;packet[1]=0;packet[2]=body.length&255;packet[3]=body.length>>8;
+ packet.set(body,4);
  return packet;
 }
+
 document.getElementById('probe').onclick=()=>{
  const name=document.getElementById('username').value.trim().toUpperCase();
  if(!/^[A-Z0-9]{2,32}$/.test(name)){out.textContent='Numele trebuie să aibă 2–32 caractere A-Z sau 0-9.';return;}
@@ -29,6 +41,6 @@ document.getElementById('probe').onclick=()=>{
  if(b.length>=3&&b[0]===0){result+='\nOpcode: LOGON_CHALLENGE (0x00)';result+='\nCod rezultat: 0x'+b[2].toString(16).padStart(2,'0');if(b[2]===0)result+=' — challenge acceptat; SRP6 urmează';else result+=' — serverul a refuzat challenge-ul (verifică numele/build-ul)';}else result+='\nRăspuns neașteptat — trebuie analizat';
  out.textContent=result;ws.close();};
  ws.onerror=()=>{clearTimeout(timer);out.textContent+='\nEroare WebSocket: verifică ws_proxy.py'};
- ws.onclose=()=>clearTimeout(timer);
+ ws.onclose=e=>{clearTimeout(timer);if(out.textContent.includes('Aștept răspunsul'))out.textContent+='\\nConexiune închisă de server (cod '+e.code+').';};
 };
 </script></html>
